@@ -3,33 +3,71 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# C extensions
+*.so
+
 # Distribution / packaging
-dist/
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environments
-venv/
-env/
-ENV/
+# PyInstaller
+*.manifest
+*.spec
 
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
 
-# Generated files
-*.pdf
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.log
-
-# Environment variables
-.env
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 
 # Selenium driver files
 geckodriver.log
 chromedriver.log
+b
+
+# Generated files
+*.pdf
+UK_Bridging_Finance_Market_Report.pdf
+*.csv
+*.xlsx
+*.json
+*.html
+*.log
+
+# Environment and IDE files
+.env
+.venv
+env/
+venv/
+ENV/
+.idea/
+.vscode/
+*.swp
+borrower_types_chart.png
+borrower_types_pie_chart.png
+lender_trends_chart.png
+lender_types_chart.png
+loan_terms_chart.png
+market_volumes_chart.png
