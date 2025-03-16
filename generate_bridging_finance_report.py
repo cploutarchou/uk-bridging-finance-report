@@ -177,7 +177,8 @@ class DataScraper:
             'lender_types': [],
             'market_characteristics': [],
             'sources_used': [],
-            'using_fallback': False
+            'using_fallback': False,
+            'raw_data': {}
         }
         
         # Initialize Selenium WebDriver
@@ -349,54 +350,48 @@ class DataScraper:
         
         # Process based on source URL
         if "ukfinance" in url:
-            self.process_uk_finance(soup)
+            self.process_uk_finance(soup, url)
         elif "bridgingtrends" in url:
-            self.process_bridging_trends(soup)
+            self.process_bridging_trends(soup, url)
         elif "ey" in url:
-            self.process_ey_financial(soup)
+            self.process_ey_financial(soup, url)
         elif "theastl" in url:
-            self.process_astl(soup)
+            self.process_astl(soup, url)
         else:
             print(f"No specific processing method for {url}, using generic extraction")
             self.process_generic(soup, url)
     
-    def process_uk_finance(self, soup):
+    def process_uk_finance(self, soup, url):
         """Extract data from UK Finance website."""
         try:
             # Look for market volume data
-            volume_patterns = [
-                r'£(\d+(?:\.\d+)?)\s*(?:billion|bn)',
-                r'(\d+(?:\.\d+)?)\s*(?:billion|bn)\s*pounds'
-            ]
+            text_content = soup.get_text()
             
-            # Extract text from paragraphs
-            paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
-            text_content = ' '.join([p.get_text() for p in paragraphs])
-            
-            # Search for market volume
-            for pattern in volume_patterns:
-                matches = re.findall(pattern, text_content, re.IGNORECASE)
-                if matches:
-                    # Convert to float and store in billions
-                    volume = float(matches[0])
-                    print(f"Found market volume: £{volume} billion")
-                    self.data['market_volume'] = volume
-                    break
-            
+            # Extract market volume if available
+            volume_pattern = r'£(\d+\.?\d*)\s*billion'
+            volume_matches = re.findall(volume_pattern, text_content)
+            if volume_matches:
+                self.data['market_volume'] = float(volume_matches[0])
+                print(f"Market volume data collected: {self.data['market_volume']}")
+                
             # Look for borrower types
-            borrower_keywords = ['homeowner', 'landlord', 'property investor', 'developer', 'business']
-            for keyword in borrower_keywords:
-                if keyword.lower() in text_content.lower():
-                    self.data['borrower_types'].append(keyword.title())
+            borrower_types = ['property investor', 'developer', 'landlord', 'business', 'individual']
+            for borrower_type in borrower_types:
+                if borrower_type in text_content.lower():
+                    formatted_type = borrower_type.title()
+                    if formatted_type not in self.data['borrower_types']:
+                        self.data['borrower_types'].append(formatted_type)
             
             # Look for lender types
-            lender_keywords = ['bank', 'specialist lender', 'alternative lender', 'peer-to-peer', 'private lender']
-            for keyword in lender_keywords:
-                if keyword.lower() in text_content.lower():
-                    self.data['lender_types'].append(keyword.title())
+            lender_types = ['bank', 'building society', 'specialist lender', 'challenger bank', 'private lender']
+            for lender_type in lender_types:
+                if lender_type in text_content.lower():
+                    formatted_type = lender_type.title()
+                    if formatted_type not in self.data['lender_types']:
+                        self.data['lender_types'].append(formatted_type)
             
-            # Extract market characteristics
-            if 'growth' in text_content.lower():
+            # Look for market characteristics
+            if 'growing' in text_content.lower() or 'increase' in text_content.lower():
                 self.data['market_characteristics'].append('Growing Market')
             if 'decline' in text_content.lower() or 'decreasing' in text_content.lower():
                 self.data['market_characteristics'].append('Declining Market')
@@ -409,46 +404,26 @@ class DataScraper:
         except Exception as e:
             print(f"Error processing UK Finance data: {e}")
     
-    def process_bridging_trends(self, soup):
+    def process_bridging_trends(self, soup, url):
         """Extract data from Bridging Trends website."""
         try:
             # Look for market volume data
-            volume_patterns = [
-                r'£(\d+(?:\.\d+)?)\s*(?:million|m)',
-                r'(\d+(?:\.\d+)?)\s*(?:million|m)\s*pounds'
-            ]
+            text_content = soup.get_text()
             
-            # Extract text from paragraphs
-            paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
-            text_content = ' '.join([p.get_text() for p in paragraphs])
-            
-            # Search for market volume
-            for pattern in volume_patterns:
-                matches = re.findall(pattern, text_content, re.IGNORECASE)
-                if matches:
-                    # Convert to float and store in billions (convert from millions)
-                    volume = float(matches[0]) / 1000
-                    print(f"Found market volume: £{volume} billion (converted from millions)")
-                    self.data['market_volume'] = volume
-                    break
-            
-            # Look for borrower types specific to bridging loans
-            borrower_keywords = ['property investor', 'developer', 'homeowner', 'business owner']
-            for keyword in borrower_keywords:
-                if keyword.lower() in text_content.lower():
-                    self.data['borrower_types'].append(keyword.title())
-            
-            # Look for lender types
-            lender_keywords = ['bridging lender', 'specialist lender', 'short-term lender']
-            for keyword in lender_keywords:
-                if keyword.lower() in text_content.lower():
-                    self.data['lender_types'].append(keyword.title())
-            
-            # Extract market characteristics
-            if 'regulated' in text_content.lower():
-                self.data['market_characteristics'].append('Regulated Lending')
-            if 'unregulated' in text_content.lower():
-                self.data['market_characteristics'].append('Unregulated Lending')
+            # Extract market volume if available
+            volume_pattern = r'£(\d+\.?\d*)\s*billion'
+            volume_matches = re.findall(volume_pattern, text_content)
+            if volume_matches:
+                self.data['market_volume'] = float(volume_matches[0])
+                print(f"Market volume data collected: {self.data['market_volume']}")
+                
+            # Look for borrower types
+            borrower_types = ['property investor', 'developer', 'landlord', 'business', 'individual']
+            for borrower_type in borrower_types:
+                if borrower_type in text_content.lower():
+                    formatted_type = borrower_type.title()
+                    if formatted_type not in self.data['borrower_types']:
+                        self.data['borrower_types'].append(formatted_type)
             
             # Store the raw data for fallback
             self.data['raw_data'][url] = text_content
@@ -456,19 +431,17 @@ class DataScraper:
         except Exception as e:
             print(f"Error processing Bridging Trends data: {e}")
     
-    def process_ey_financial(self, soup):
+    def process_ey_financial(self, soup, url):
         """Extract data from EY Financial Services website."""
         try:
             # Extract text from paragraphs
             paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
             text_content = ' '.join([p.get_text() for p in paragraphs])
             
-            # Look for market characteristics
-            if 'innovation' in text_content.lower():
-                self.data['market_characteristics'].append('Innovative Market')
-            if 'technology' in text_content.lower() or 'tech' in text_content.lower():
+            # Extract market characteristics
+            if 'technology' in text_content.lower() or 'digital' in text_content.lower():
                 self.data['market_characteristics'].append('Technology-Driven')
-            if 'regulation' in text_content.lower():
+            if 'regulation' in text_content.lower() or 'compliance' in text_content.lower():
                 self.data['market_characteristics'].append('Highly Regulated')
             
             # Store the raw data for fallback
@@ -477,20 +450,19 @@ class DataScraper:
         except Exception as e:
             print(f"Error processing EY Financial data: {e}")
     
-    def process_astl(self, soup):
+    def process_astl(self, soup, url):
         """Extract data from ASTL website."""
         try:
+            # Extract text from paragraphs
+            paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
+            text_content = ' '.join([p.get_text() for p in paragraphs])
+            
             # Look for market volume data
             volume_patterns = [
                 r'£(\d+(?:\.\d+)?)\s*(?:billion|bn)',
                 r'(\d+(?:\.\d+)?)\s*(?:billion|bn)\s*pounds'
             ]
             
-            # Extract text from paragraphs
-            paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
-            text_content = ' '.join([p.get_text() for p in paragraphs])
-            
-            # Search for market volume
             for pattern in volume_patterns:
                 matches = re.findall(pattern, text_content, re.IGNORECASE)
                 if matches:
@@ -513,7 +485,7 @@ class DataScraper:
             print(f"Error processing ASTL data: {e}")
     
     def process_generic(self, soup, url):
-        """Generic processing for any source without a specific method."""
+        """Generic processing for any website."""
         try:
             # Extract text from paragraphs
             paragraphs = soup.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'])
@@ -522,8 +494,8 @@ class DataScraper:
             # Look for market volume data
             volume_patterns = [
                 r'£(\d+(?:\.\d+)?)\s*(?:billion|bn)',
+                r'(\d+(?:\.\d+)?)\s*(?:million|m)',
                 r'(\d+(?:\.\d+)?)\s*(?:billion|bn)\s*pounds',
-                r'£(\d+(?:\.\d+)?)\s*(?:million|m)',
                 r'(\d+(?:\.\d+)?)\s*(?:million|m)\s*pounds'
             ]
             
@@ -532,7 +504,7 @@ class DataScraper:
                 if matches:
                     # Convert to float and store in billions
                     volume = float(matches[0])
-                    # If it's in millions, convert to billions
+                    # If the pattern contains 'million', convert to billions
                     if 'million' in pattern or 'm' in pattern:
                         volume /= 1000
                     print(f"Found market volume: £{volume} billion")
@@ -543,7 +515,7 @@ class DataScraper:
             self.data['raw_data'][url] = text_content
             
         except Exception as e:
-            print(f"Error in generic processing for {url}: {e}")
+            print(f"Error in generic processing: {e}")
     
     def use_fallback_data(self):
         """Use fallback data when scraping fails."""
